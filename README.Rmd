@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 ## Carregando Pacotes
 ```{r}
 library(tidyverse)
-library(ExpDes.pt)
+library(agricolae)
 library(emmeans)
 library(readxl)
 library(skimr)
@@ -32,7 +32,7 @@ library(lme4)
 ```{r}
 dados <- read_xlsx("data/DADOS GILMAR VOL NH3.xlsx") %>% 
   janitor::clean_names() %>% 
-  mutate_at(vars(estacao, especie, excreta), as_factor)
+  mutate_at(vars(estacao, especie, excreta, rp), as_factor)
 glimpse(dados)
 ```
 
@@ -47,22 +47,6 @@ skim(dados)
 dados %>% 
   ggplot(aes(x=percent_n_volatilizado, y = ..density..)) +
   geom_histogram(bins = 10, color="black", fill="aquamarine4")+
-  theme_minimal()
-```
-
-transformado
-
-```{r}
-dados %>% 
-  ggplot(aes(x=percent_n_volatilizado^(.5), y = ..density..)) +
-  geom_histogram(bins = 10, color="black", fill="orange")+
-  theme_minimal()
-```
-
-```{r}
-dados %>% 
-  ggplot(aes(x=log10(percent_n_volatilizado), y = ..density..)) +
-  geom_histogram(bins = 10, color="black", fill="lightblue")+
   theme_minimal()
 ```
 
@@ -107,7 +91,121 @@ dados %>%
 
 ### Possiveis Soluções popostas:
 
-  * 1) Padronizar os valores de `percent_n_volatilizado`
-  * 2) Aplicar uma transformação nos dados para trazer todos a uma mesma escala.
-  * 3) Realizar a análise independente da `excreta`, ou seja, uma análise para cada excreta.
+  * 1) Aplicar uma transformação nos dados para trazer todos a uma mesma escala.
+```{r}
+BoxCox <- (boxcox(mod0))
+```
+Encontrando o valor de $\lambda$.
 
+```{r}
+lambda <- BoxCox %>% 
+  data.frame() %>% 
+  arrange(desc(y)) %>% 
+  slice(n=1) %>% 
+  pull(x)
+lambda
+```
+como $\lambda \neq 0$ e $\lambda \neq 1$ usamos a transformação de dados:
+
+$$
+y = \frac{y^{\lambda}-1}{\lambda}
+$$
+```{r}
+dados <- dados %>% 
+  mutate(
+    percent_n_volatilizado_t = (percent_n_volatilizado^lambda-1)/(lambda)
+    )
+```
+
+Vamos refazer as análises, portanto.
+
+```{r}
+dados %>% 
+  ggplot(aes(x=percent_n_volatilizado_t, y = ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="aquamarine1")+
+  theme_minimal()
+```
+
+```{r}
+mod1 <- aov(percent_n_volatilizado_t ~ trat, data =dados)
+dados %>% 
+  mutate(
+    pred_t = predict(mod1),
+    rs_t = rstudent(mod1)
+  ) %>% 
+  ggplot(aes(x=rs_t, y= ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="lightgray")+
+  theme_minimal()
+```
+
+teste de normalidade de **Shapiro-Wilk**
+```{r}
+mod1 %>% rstudent() %>% shapiro.test()
+```
+
+```{r}
+dados %>% 
+  ggplot(aes(x=trat, y= percent_n_volatilizado_t,fill=trat)) +
+  geom_boxplot()+
+  theme_minimal() +
+  coord_flip() +
+  theme(legend.position = "none") +
+  scale_fill_viridis_d()
+```
+
+
+## Análise de variância PRIMAVERA
+
+```{r}
+mod4 <- lm(percent_n_volatilizado_t ~ excreta * especie,
+  data= dados %>% filter(estacao == "PRIMAVERA")
+)
+anova(mod4)
+```
+
+## Comparação de médias
+```{r}
+dados %>% filter(estacao == "PRIMAVERA") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  )
+```
+
+
+```{r}
+post_hoc_ExEs <- emmeans(mod4, ~ excreta*especie)
+pairs(post_hoc_ExEs, adjust="tukey")
+```
+
+## Análise de variância VERÃO
+
+```{r}
+mod5 <- lm(percent_n_volatilizado_t ~ excreta * especie,
+  data= dados %>% filter(estacao == "VERÃO")
+)
+anova(mod5)
+```
+
+## Comparação de médias
+```{r}
+post_hoc_ExEs <- emmeans(mod5, ~ excreta*especie)
+pairs(post_hoc_ExEs, adjust="tukey")
+```
+
+
+## Análise de variância INVERNO
+
+```{r}
+mod6 <- lm(percent_n_volatilizado_t ~ excreta * especie,
+  data= dados %>% filter(estacao == "INVERNO")
+)
+anova(mod6)
+```
+
+## Comparação de médias
+```{r}
+post_hoc_ExEs <- emmeans(mod6, ~ excreta*especie)
+pairs(post_hoc_ExEs, adjust="tukey")
+```
