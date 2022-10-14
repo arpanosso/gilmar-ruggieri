@@ -1,0 +1,113 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  error = FALSE,
+  warning = FALSE
+)
+```
+
+# Análise de volatilização de amônia por excretas animal
+
+## Carregando Pacotes
+```{r}
+library(tidyverse)
+library(ExpDes.pt)
+library(emmeans)
+library(readxl)
+library(skimr)
+library(MASS)
+library(lme4)
+```
+
+## Entrada de dados
+
+```{r}
+dados <- read_xlsx("data/DADOS GILMAR VOL NH3.xlsx") %>% 
+  janitor::clean_names() %>% 
+  mutate_at(vars(estacao, especie, excreta), as_factor)
+glimpse(dados)
+```
+
+## Resumo simples dos dados
+
+```{r}
+skim(dados)
+```
+## Explorando a variável resposta
+
+```{r}
+dados %>% 
+  ggplot(aes(x=percent_n_volatilizado, y = ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="aquamarine4")+
+  theme_minimal()
+```
+
+transformado
+
+```{r}
+dados %>% 
+  ggplot(aes(x=percent_n_volatilizado^(.5), y = ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="orange")+
+  theme_minimal()
+```
+
+```{r}
+dados %>% 
+  ggplot(aes(x=log10(percent_n_volatilizado), y = ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="lightblue")+
+  theme_minimal()
+```
+
+## Testando os pressupostos
+
+```{r}
+dados <- dados %>% 
+  mutate(
+    trat = interaction(estacao, especie, excreta,sep="-"))
+```
+
+## Anova Preliminar
+```{r}
+mod0 <- aov(percent_n_volatilizado ~ trat, data =dados)
+summary(mod0)
+
+dados %>% 
+  mutate(
+    pred = predict(mod0),
+    rs = rstudent(mod0)
+  ) %>% 
+  ggplot(aes(x=rs, y= ..density..)) +
+  geom_histogram(bins = 10, color="black", fill="lightgray")+
+  theme_minimal()
+```
+ teste de normalidade de **Shapiro-Wilk**
+```{r}
+mod0 %>% rstudent() %>% shapiro.test()
+```
+
+```{r}
+dados %>% 
+  ggplot(aes(x=trat, y= percent_n_volatilizado,fill=trat)) +
+  geom_boxplot()+
+  theme_minimal() +
+  coord_flip() +
+  theme(legend.position = "none") +
+  scale_fill_viridis_d()
+```
+
+> Existe uma discrepância nos valores de `percent_n_volatilizado` entre urina e fezes, levando a heterocedasticidade.
+
+### Possiveis Soluções popostas:
+
+  * 1) Padronizar os valores de `percent_n_volatilizado`
+  * 2) Aplicar uma transformação nos dados para trazer todos a uma mesma escala.
+  * 3) Realizar a análise independente da `excreta`, ou seja, uma análise para cada excreta.
+
