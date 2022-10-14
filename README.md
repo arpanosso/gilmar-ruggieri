@@ -236,8 +236,9 @@ dados %>%
   scale_fill_viridis_d()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- --> \## Análise
-para FEZES - Variável original
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+## Análise para FEZES - Variável original
 
 ``` r
 mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),

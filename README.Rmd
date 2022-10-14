@@ -153,6 +153,7 @@ dados %>%
   theme(legend.position = "none") +
   scale_fill_viridis_d()
 ```
+
 ## Análise para FEZES - Variável original
 
 ```{r}
@@ -182,6 +183,7 @@ dados %>%
 
 ## Análise para URINA
 
+
 ```{r}
 mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),
             data=dados %>% 
@@ -205,6 +207,7 @@ dados %>%
   scale_fill_viridis_d()
 ```
 
+
 ## Análise de variância PRIMAVERA - variável transformada
 
 ```{r}
@@ -215,6 +218,7 @@ anova(mod4)
 ```
 
 ## Comparação de médias
+
 ```{r}
 post_hoc_ExEs <- emmeans(mod4, ~ excreta*especie)
 pairs(post_hoc_ExEs, adjust="tukey")
