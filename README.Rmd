@@ -20,6 +20,7 @@ knitr::opts_chunk$set(
 ```{r}
 library(tidyverse)
 library(agricolae)
+library(lmerTest)
 library(emmeans)
 library(readxl)
 library(skimr)
@@ -152,9 +153,59 @@ dados %>%
   theme(legend.position = "none") +
   scale_fill_viridis_d()
 ```
+## Análise para FEZES - Variável original
+
+```{r}
+mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),
+            data=dados %>% 
+              filter(excreta == "FEZES"))
+anova(mod)
+post_hoc <- emmeans(mod, ~ especie*estacao)
+pairs(post_hoc, adjust="tukey")
+```
+
+```{r}
+dados %>% 
+  filter(excreta == "FEZES") %>% 
+  group_by(especie, estacao) %>% 
+  summarise(
+    media = mean(percent_n_volatilizado)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=estacao, y=media, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
 
 
-## Análise de variância PRIMAVERA
+## Análise para URINA
+
+```{r}
+mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),
+            data=dados %>% 
+              filter(excreta == "URINA"))
+post_hoc <- emmeans(mod, ~ especie*estacao)
+pairs(post_hoc, adjust="tukey")
+```
+
+```{r}
+dados %>% 
+  filter(excreta == "URINA") %>% 
+  group_by(especie, estacao) %>% 
+  summarise(
+    media = mean(percent_n_volatilizado)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=estacao, y=media, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+## Análise de variância PRIMAVERA - variável transformada
 
 ```{r}
 mod4 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -165,21 +216,25 @@ anova(mod4)
 
 ## Comparação de médias
 ```{r}
+post_hoc_ExEs <- emmeans(mod4, ~ excreta*especie)
+pairs(post_hoc_ExEs, adjust="tukey")
+```
+```{r}
 dados %>% filter(estacao == "PRIMAVERA") %>% 
   group_by(excreta, especie) %>% 
   summarise(
     y= mean(percent_n_volatilizado),
     y_t= mean(percent_n_volatilizado_t)
-  )
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
 ```
 
-
-```{r}
-post_hoc_ExEs <- emmeans(mod4, ~ excreta*especie)
-pairs(post_hoc_ExEs, adjust="tukey")
-```
-
-## Análise de variância VERÃO
+## Análise de variância VERÃO - variável transformada
 
 ```{r}
 mod5 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -194,8 +249,23 @@ post_hoc_ExEs <- emmeans(mod5, ~ excreta*especie)
 pairs(post_hoc_ExEs, adjust="tukey")
 ```
 
+```{r}
+dados %>% filter(estacao == "VERÃO") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
 
-## Análise de variância INVERNO
+
+## Análise de variância INVERNO - variável transformada 
 
 ```{r}
 mod6 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -208,4 +278,19 @@ anova(mod6)
 ```{r}
 post_hoc_ExEs <- emmeans(mod6, ~ excreta*especie)
 pairs(post_hoc_ExEs, adjust="tukey")
+```
+
+```{r}
+dados %>% filter(estacao == "INVERNO") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
 ```

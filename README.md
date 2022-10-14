@@ -8,6 +8,7 @@
 ``` r
 library(tidyverse)
 library(agricolae)
+library(lmerTest)
 library(emmeans)
 library(readxl)
 library(skimr)
@@ -235,9 +236,150 @@ dados %>%
   scale_fill_viridis_d()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- --> \## Análise
+para FEZES - Variável original
 
-## Análise de variância PRIMAVERA
+``` r
+mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),
+            data=dados %>% 
+              filter(excreta == "FEZES"))
+anova(mod)
+#> Type III Analysis of Variance Table with Satterthwaite's method
+#>                 Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+#> especie         50.279  25.139     2    32  71.215 1.646e-12 ***
+#> estacao         98.805  49.402     2    32 139.946 < 2.2e-16 ***
+#> especie:estacao 92.187  23.047     4    32  65.286 6.201e-15 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+post_hoc <- emmeans(mod, ~ especie*estacao)
+pairs(post_hoc, adjust="tukey")
+#>  contrast                             estimate    SE df t.ratio p.value
+#>  CAPRINO VERÃO - EQUINO VERÃO          -0.2691 0.376 32  -0.716  0.9982
+#>  CAPRINO VERÃO - OVINO VERÃO            0.0786 0.376 32   0.209  1.0000
+#>  CAPRINO VERÃO - CAPRINO INVERNO       -1.1336 0.376 32  -3.017  0.0991
+#>  CAPRINO VERÃO - EQUINO INVERNO        -0.6242 0.376 32  -1.661  0.7644
+#>  CAPRINO VERÃO - OVINO INVERNO         -1.2620 0.376 32  -3.358  0.0460
+#>  CAPRINO VERÃO - CAPRINO PRIMAVERA     -2.5430 0.376 32  -6.767  <.0001
+#>  CAPRINO VERÃO - EQUINO PRIMAVERA      -0.4361 0.376 32  -1.161  0.9591
+#>  CAPRINO VERÃO - OVINO PRIMAVERA       -7.7321 0.376 32 -20.577  <.0001
+#>  EQUINO VERÃO - OVINO VERÃO             0.3477 0.376 32   0.925  0.9897
+#>  EQUINO VERÃO - CAPRINO INVERNO        -0.8644 0.376 32  -2.300  0.3713
+#>  EQUINO VERÃO - EQUINO INVERNO         -0.3551 0.376 32  -0.945  0.9882
+#>  EQUINO VERÃO - OVINO INVERNO          -0.9928 0.376 32  -2.642  0.2093
+#>  EQUINO VERÃO - CAPRINO PRIMAVERA      -2.2738 0.376 32  -6.051  <.0001
+#>  EQUINO VERÃO - EQUINO PRIMAVERA       -0.1670 0.376 32  -0.444  0.9999
+#>  EQUINO VERÃO - OVINO PRIMAVERA        -7.4630 0.376 32 -19.860  <.0001
+#>  OVINO VERÃO - CAPRINO INVERNO         -1.2122 0.376 32  -3.226  0.0624
+#>  OVINO VERÃO - EQUINO INVERNO          -0.7028 0.376 32  -1.870  0.6375
+#>  OVINO VERÃO - OVINO INVERNO           -1.3405 0.376 32  -3.567  0.0278
+#>  OVINO VERÃO - CAPRINO PRIMAVERA       -2.6216 0.376 32  -6.977  <.0001
+#>  OVINO VERÃO - EQUINO PRIMAVERA        -0.5147 0.376 32  -1.370  0.9008
+#>  OVINO VERÃO - OVINO PRIMAVERA         -7.8107 0.376 32 -20.786  <.0001
+#>  CAPRINO INVERNO - EQUINO INVERNO       0.5094 0.376 32   1.356  0.9059
+#>  CAPRINO INVERNO - OVINO INVERNO       -0.1284 0.376 32  -0.342  1.0000
+#>  CAPRINO INVERNO - CAPRINO PRIMAVERA   -1.4094 0.376 32  -3.751  0.0176
+#>  CAPRINO INVERNO - EQUINO PRIMAVERA     0.6974 0.376 32   1.856  0.6466
+#>  CAPRINO INVERNO - OVINO PRIMAVERA     -6.5985 0.376 32 -17.560  <.0001
+#>  EQUINO INVERNO - OVINO INVERNO        -0.6377 0.376 32  -1.697  0.7438
+#>  EQUINO INVERNO - CAPRINO PRIMAVERA    -1.9188 0.376 32  -5.106  0.0004
+#>  EQUINO INVERNO - EQUINO PRIMAVERA      0.1881 0.376 32   0.501  0.9999
+#>  EQUINO INVERNO - OVINO PRIMAVERA      -7.1079 0.376 32 -18.916  <.0001
+#>  OVINO INVERNO - CAPRINO PRIMAVERA     -1.2810 0.376 32  -3.409  0.0408
+#>  OVINO INVERNO - EQUINO PRIMAVERA       0.8258 0.376 32   2.198  0.4309
+#>  OVINO INVERNO - OVINO PRIMAVERA       -6.4702 0.376 32 -17.218  <.0001
+#>  CAPRINO PRIMAVERA - EQUINO PRIMAVERA   2.1069 0.376 32   5.607  0.0001
+#>  CAPRINO PRIMAVERA - OVINO PRIMAVERA   -5.1891 0.376 32 -13.809  <.0001
+#>  EQUINO PRIMAVERA - OVINO PRIMAVERA    -7.2960 0.376 32 -19.416  <.0001
+#> 
+#> Degrees-of-freedom method: kenward-roger 
+#> P value adjustment: tukey method for comparing a family of 9 estimates
+```
+
+``` r
+dados %>% 
+  filter(excreta == "FEZES") %>% 
+  group_by(especie, estacao) %>% 
+  summarise(
+    media = mean(percent_n_volatilizado)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=estacao, y=media, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+## Análise para URINA
+
+``` r
+mod <- lmer(percent_n_volatilizado ~ especie*estacao + (1|rp),
+            data=dados %>% 
+              filter(excreta == "URINA"))
+post_hoc <- emmeans(mod, ~ especie*estacao)
+pairs(post_hoc, adjust="tukey")
+#>  contrast                             estimate  SE df t.ratio p.value
+#>  CAPRINO VERÃO - EQUINO VERÃO             7.56 2.9 32   2.607  0.2232
+#>  CAPRINO VERÃO - OVINO VERÃO              8.76 2.9 32   3.018  0.0987
+#>  CAPRINO VERÃO - CAPRINO INVERNO         -6.00 2.9 32  -2.067  0.5113
+#>  CAPRINO VERÃO - EQUINO INVERNO          -2.40 2.9 32  -0.828  0.9950
+#>  CAPRINO VERÃO - OVINO INVERNO            3.38 2.9 32   1.164  0.9584
+#>  CAPRINO VERÃO - CAPRINO PRIMAVERA      -23.74 2.9 32  -8.182  <.0001
+#>  CAPRINO VERÃO - EQUINO PRIMAVERA       -15.56 2.9 32  -5.365  0.0002
+#>  CAPRINO VERÃO - OVINO PRIMAVERA          5.69 2.9 32   1.962  0.5785
+#>  EQUINO VERÃO - OVINO VERÃO               1.19 2.9 32   0.411  1.0000
+#>  EQUINO VERÃO - CAPRINO INVERNO         -13.56 2.9 32  -4.674  0.0015
+#>  EQUINO VERÃO - EQUINO INVERNO           -9.97 2.9 32  -3.435  0.0383
+#>  EQUINO VERÃO - OVINO INVERNO            -4.19 2.9 32  -1.443  0.8724
+#>  EQUINO VERÃO - CAPRINO PRIMAVERA       -31.30 2.9 32 -10.789  <.0001
+#>  EQUINO VERÃO - EQUINO PRIMAVERA        -23.13 2.9 32  -7.971  <.0001
+#>  EQUINO VERÃO - OVINO PRIMAVERA          -1.87 2.9 32  -0.644  0.9991
+#>  OVINO VERÃO - CAPRINO INVERNO          -14.76 2.9 32  -5.086  0.0005
+#>  OVINO VERÃO - EQUINO INVERNO           -11.16 2.9 32  -3.846  0.0138
+#>  OVINO VERÃO - OVINO INVERNO             -5.38 2.9 32  -1.854  0.6477
+#>  OVINO VERÃO - CAPRINO PRIMAVERA        -32.50 2.9 32 -11.201  <.0001
+#>  OVINO VERÃO - EQUINO PRIMAVERA         -24.32 2.9 32  -8.383  <.0001
+#>  OVINO VERÃO - OVINO PRIMAVERA           -3.06 2.9 32  -1.056  0.9765
+#>  CAPRINO INVERNO - EQUINO INVERNO         3.60 2.9 32   1.240  0.9411
+#>  CAPRINO INVERNO - OVINO INVERNO          9.38 2.9 32   3.231  0.0616
+#>  CAPRINO INVERNO - CAPRINO PRIMAVERA    -17.74 2.9 32  -6.115  <.0001
+#>  CAPRINO INVERNO - EQUINO PRIMAVERA      -9.57 2.9 32  -3.297  0.0530
+#>  CAPRINO INVERNO - OVINO PRIMAVERA       11.69 2.9 32   4.030  0.0086
+#>  EQUINO INVERNO - OVINO INVERNO           5.78 2.9 32   1.992  0.5595
+#>  EQUINO INVERNO - CAPRINO PRIMAVERA     -21.34 2.9 32  -7.354  <.0001
+#>  EQUINO INVERNO - EQUINO PRIMAVERA      -13.16 2.9 32  -4.537  0.0022
+#>  EQUINO INVERNO - OVINO PRIMAVERA         8.10 2.9 32   2.790  0.1578
+#>  OVINO INVERNO - CAPRINO PRIMAVERA      -27.12 2.9 32  -9.346  <.0001
+#>  OVINO INVERNO - EQUINO PRIMAVERA       -18.94 2.9 32  -6.529  <.0001
+#>  OVINO INVERNO - OVINO PRIMAVERA          2.32 2.9 32   0.798  0.9961
+#>  CAPRINO PRIMAVERA - EQUINO PRIMAVERA     8.18 2.9 32   2.818  0.1495
+#>  CAPRINO PRIMAVERA - OVINO PRIMAVERA     29.43 2.9 32  10.145  <.0001
+#>  EQUINO PRIMAVERA - OVINO PRIMAVERA      21.26 2.9 32   7.327  <.0001
+#> 
+#> Degrees-of-freedom method: kenward-roger 
+#> P value adjustment: tukey method for comparing a family of 9 estimates
+```
+
+``` r
+dados %>% 
+  filter(excreta == "URINA") %>% 
+  group_by(especie, estacao) %>% 
+  summarise(
+    media = mean(percent_n_volatilizado)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=estacao, y=media, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+## Análise de variância PRIMAVERA - variável transformada
 
 ``` r
 mod4 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -257,25 +399,6 @@ anova(mod4)
 ```
 
 ## Comparação de médias
-
-``` r
-dados %>% filter(estacao == "PRIMAVERA") %>% 
-  group_by(excreta, especie) %>% 
-  summarise(
-    y= mean(percent_n_volatilizado),
-    y_t= mean(percent_n_volatilizado_t)
-  )
-#> # A tibble: 6 x 4
-#> # Groups:   excreta [2]
-#>   excreta especie      y    y_t
-#>   <fct>   <fct>    <dbl>  <dbl>
-#> 1 URINA   CAPRINO 34.7    5.37 
-#> 2 URINA   EQUINO  26.5    4.75 
-#> 3 URINA   OVINO    5.24   1.89 
-#> 4 FEZES   CAPRINO  2.68   1.08 
-#> 5 FEZES   EQUINO   0.572 -0.547
-#> 6 FEZES   OVINO    7.87   2.60
-```
 
 ``` r
 post_hoc_ExEs <- emmeans(mod4, ~ excreta*especie)
@@ -300,7 +423,24 @@ pairs(post_hoc_ExEs, adjust="tukey")
 #> P value adjustment: tukey method for comparing a family of 6 estimates
 ```
 
-## Análise de variância VERÃO
+``` r
+dados %>% filter(estacao == "PRIMAVERA") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+## Análise de variância VERÃO - variável transformada
 
 ``` r
 mod5 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -344,7 +484,24 @@ pairs(post_hoc_ExEs, adjust="tukey")
 #> P value adjustment: tukey method for comparing a family of 6 estimates
 ```
 
-## Análise de variância INVERNO
+``` r
+dados %>% filter(estacao == "VERÃO") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+## Análise de variância INVERNO - variável transformada
 
 ``` r
 mod6 <- lm(percent_n_volatilizado_t ~ excreta * especie,
@@ -387,3 +544,20 @@ pairs(post_hoc_ExEs, adjust="tukey")
 #> 
 #> P value adjustment: tukey method for comparing a family of 6 estimates
 ```
+
+``` r
+dados %>% filter(estacao == "INVERNO") %>% 
+  group_by(excreta, especie) %>% 
+  summarise(
+    y= mean(percent_n_volatilizado),
+    y_t= mean(percent_n_volatilizado_t)
+  ) %>% ungroup() %>% 
+  ggplot(
+    aes(x=excreta, y=y, fill=especie)
+  ) +
+  geom_col(position="dodge") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
